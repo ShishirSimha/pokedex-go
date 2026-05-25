@@ -4,38 +4,44 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/ShishirSimha/pokedex-go/internal/command" // change to your module name
 )
 
 func main() {
-	//Scanner to scan input
-	scanner := bufio.NewScanner(os.Stdin)
+	command.InitCommands()
 
-	//Infinite for loop for the REPL
+	config := &command.Config{}
+
+	fmt.Println("Welcome to the Pokedex! Type 'help' for commands.")
+
+	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
-
-		//Scan the input now
-		scanner.Scan()
-
-		//Register the commands
-		commands := RegisterCommands()
-
-		//get the input command and split.
-		input := cleanInput(scanner.Text())
-
-		//Check if the first word is a command
-		if command, exists := commands[input[0]]; exists {
-			//call the command
-			command.callback()
-		} else {
-			printUnknown(input[0])
+		if !scanner.Scan() {
+			break
 		}
 
+		input := strings.TrimSpace(scanner.Text())
+		if input == "" {
+			continue
+		}
+
+		cmdName := strings.ToLower(strings.Fields(input)[0])
+
+		cmd, exists := command.Commands[cmdName]
+		if !exists {
+			fmt.Println("Unknown command. Type 'help' for available commands.")
+			continue
+		}
+
+		err := cmd.Callback(config)
+		if err != nil {
+			if err.Error() == "exit" {
+				return
+			}
+			fmt.Printf("Error: %v\n", err)
+		}
 	}
-
-}
-
-// printUnkown informs the user about invalid commands
-func printUnknown(text string) {
-	fmt.Println(text, ": command not found")
 }
