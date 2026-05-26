@@ -23,12 +23,13 @@ func main() {
 			break
 		}
 
-		input := strings.TrimSpace(scanner.Text())
-		if input == "" {
+		cleanedInput, err := cleanInput(scanner.Text())
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
 			continue
 		}
 
-		cmdName := strings.ToLower(strings.Fields(input)[0])
+		cmdName := cleanedInput[0]
 
 		cmd, exists := command.Commands[cmdName]
 		if !exists {
@@ -36,12 +37,22 @@ func main() {
 			continue
 		}
 
-		err := cmd.Callback(config)
+		err = cmd.Callback(config)
 		if err != nil {
-			if err.Error() == "exit" {
-				return
-			}
 			fmt.Printf("Error: %v\n", err)
 		}
 	}
+}
+
+func cleanInput(text string) ([]string, error) {
+	//trim space
+	cleanedText := strings.TrimSpace(text)
+
+	if cleanedText == "" {
+		return nil, fmt.Errorf("invalid input")
+	}
+
+	cleanedText = strings.ToLower(text)
+	words := strings.Fields(cleanedText)
+	return words, nil
 }

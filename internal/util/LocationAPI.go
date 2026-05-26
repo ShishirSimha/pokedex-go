@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/ShishirSimha/pokedex-go/internal/pokecache"
 )
 
 // LocationAreaResponse represents the paginated response from /location-area
 type LocationAreaResponse struct {
-	Count    int `json:"count"`
+	Count    int     `json:"count"`
 	Next     *string `json:"next"`
 	Previous *string `json:"previous"`
 	Results  []struct {
@@ -18,8 +21,25 @@ type LocationAreaResponse struct {
 	} `json:"results"`
 }
 
+// Create the cache
+var cache = pokecache.NewCache(5 * time.Minute)
+
 // FetchLocationAreas calls the PokeAPI and returns the response
 func FetchLocationAreas(url string) (*LocationAreaResponse, error) {
+
+	var locationResp LocationAreaResponse
+
+	if data, found := cache.Get(url); found {
+		//Its a cache hit
+		err := json.Unmarshal(data, &locationResp)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
+		}
+		return &locationResp, nil
+	}
+
+	//Make the actual HTTP request
+
 	if url == "" {
 		url = "https://pokeapi.co/api/v2/location-area?limit=20"
 	}
@@ -39,7 +59,8 @@ func FetchLocationAreas(url string) (*LocationAreaResponse, error) {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
-	var locationResp LocationAreaResponse
+	cache.Add(url, body)
+
 	err = json.Unmarshal(body, &locationResp)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
