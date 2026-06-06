@@ -30,6 +30,7 @@ func main() {
 		}
 
 		cmdName := cleanedInput[0]
+		args := cleanedInput[1:] // remaining words are arguments
 
 		cmd, exists := command.Commands[cmdName]
 		if !exists {
@@ -37,7 +38,7 @@ func main() {
 			continue
 		}
 
-		err = cmd.Callback(config)
+		err = cmd.Callback(config, args)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 		}
